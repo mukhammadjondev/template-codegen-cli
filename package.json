@@ -1,6 +1,6 @@
 {
-  "name": "smart-codegen",
-  "version": "1.0.1",
+  "name": "template-codegen-cli",
+  "version": "1.0.0",
   "description": "Universal code generator with nested object support for dynamic form and component generation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -38,12 +38,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mukhammadjondev/smart-codegen.git"
+    "url": "https://github.com/mukhammadjondev/template-codegen-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/mukhammadjondev/smart-codegen/issues"
+    "url": "https://github.com/mukhammadjondev/template-codegen-cli/issues"
   },
-  "homepage": "https://github.com/mukhammadjondev/smart-codegen#readme",
+  "homepage": "https://github.com/mukhammadjondev/template-codegen-cli#readme",
   "license": "MIT",
   "engines": {
     "node": ">=14.0.0",

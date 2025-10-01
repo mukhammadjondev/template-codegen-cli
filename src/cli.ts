@@ -334,7 +334,7 @@ program
     }
 
     const configContent = useTypeScript
-      ? `import { GeneratorConfig } from 'smart-codegen';
+      ? `import { GeneratorConfig } from 'template-codegen-cli';
 
 const config: GeneratorConfig = {
   templates: {

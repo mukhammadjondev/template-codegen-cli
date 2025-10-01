@@ -2,7 +2,7 @@
 
 🚀 **Universal code generator with nested object support for dynamic form and component generation**
 
-[![npm version](https://badge.fury.io/js/smart-codegen.svg)](https://www.npmjs.com/package/smart-codegen)
+[![npm version](https://badge.fury.io/js/template-codegen-cli.svg)](https://www.npmjs.com/package/template-codegen-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Why Smart Codegen?
@@ -31,7 +31,7 @@ Stop writing repetitive boilerplate code. Smart Codegen generates complete, prod
 ## Installation
 
 ```bash
-npm install -g smart-codegen
+npm install template-codegen-cli
 ```
 
 ## Quick Start
@@ -194,7 +194,7 @@ Smart Codegen supports multiple placeholder types for flexible code generation:
 Create `codegen.config.ts`:
 
 ```typescript
-import { GeneratorConfig } from 'smart-codegen';
+import { GeneratorConfig } from 'template-codegen-cli';
 
 const config: GeneratorConfig = {
   templates: {
@@ -432,9 +432,9 @@ MIT © [Mukhammadjon Solijonov](https://github.com/mukhammadjondev)
 
 ## Support
 
-- 📖 [Documentation](https://github.com/mukhammadjondev/smart-codegen#readme)
-- 🐛 [Report Issues](https://github.com/mukhammadjondev/smart-codegen/issues)
-- 💬 [Discussions](https://github.com/mukhammadjondev/smart-codegen/discussions)
+- 📖 [Documentation](https://github.com/mukhammadjondev/template-codegen-cli#readme)
+- 🐛 [Report Issues](https://github.com/mukhammadjondev/template-codegen-cli/issues)
+- 💬 [Discussions](https://github.com/mukhammadjondev/template-codegen-cli/discussions)
 
 ---
 
