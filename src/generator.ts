@@ -48,16 +48,36 @@ export class Generator {
         const resolvedPath = path.resolve(tryPath);
 
         try {
-          // Clear require cache
-          delete require.cache[resolvedPath];
-
           if (tryPath.endsWith('.json')) {
             const content = fs.readFileSync(resolvedPath, 'utf8');
             this.config = JSON.parse(content);
           } else {
-            // For .js files, use dynamic import to avoid module system issues
-            const loaded = require(resolvedPath);
-            this.config = loaded.default || loaded;
+            delete require.cache[resolvedPath];
+
+            const { createRequire } = require('module');
+            const requireFromPath = createRequire(resolvedPath);
+
+            try {
+              const loaded = requireFromPath(resolvedPath);
+              this.config = loaded.default || loaded;
+            } catch (requireError) {
+              // Fallback: try reading as plain JavaScript and eval
+              const content = fs.readFileSync(resolvedPath, 'utf8');
+
+              // Create a module context
+              const moduleExports: any = {};
+              const moduleObj = { exports: moduleExports };
+
+              // Wrap in function to provide module context
+              const wrapped = `(function(module, exports, require) { ${content} })(moduleObj, moduleObj.exports, require);`;
+
+              try {
+                eval(wrapped);
+                this.config = moduleObj.exports.default || moduleObj.exports;
+              } catch {
+                throw requireError;
+              }
+            }
           }
 
           if (
@@ -79,7 +99,7 @@ export class Generator {
 
     throw new Error(
       'Config file not found. Run "codegen init" first.\n' +
-        'Looking for: codegen.config.js or codegen.config.json'
+        'Looking for: codegen.config.cjs, codegen.config.js, or codegen.config.json'
     );
   }
 
