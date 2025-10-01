@@ -1,12 +1,11 @@
-// Main Generator class
+// Main exports
 export { Generator } from './generator';
+export type {
+  GeneratorConfig,
+  TemplateConfig,
+  GenerationResult,
+  GenerationContext,
+} from './generator';
 
-// Type definitions
-export * from './types';
-
-// Version info
-export const version = '1.0.0';
-
-// Default export
-import { Generator } from './generator';
-export default Generator;
+// Package metadata
+export const version = '1.0.1';

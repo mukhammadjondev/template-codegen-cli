@@ -1,19 +1,18 @@
 {
   "name": "template-codegen-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Universal code generator with nested object support for dynamic form and component generation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "codegen": "dist/cli.js"
+    "codegen": "dist/cli.js",
+    "cg": "dist/cli.js"
   },
   "scripts": {
     "dev": "ts-node src/cli.ts",
     "build": "tsc && chmod +x dist/cli.js",
     "prepublishOnly": "npm run build",
-    "clean": "rm -rf dist",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "lint": "eslint src --ext .ts"
+    "clean": "rm -rf dist"
   },
   "keywords": [
     "code-generator",
@@ -33,7 +32,7 @@
   ],
   "author": {
     "name": "Mukhammadjon Solijonov",
-    "email": "solijonovdev@gmail.com",
+    "email": "mukhammadjon.solijonov03@gmail.com",
     "url": "https://github.com/mukhammadjondev"
   },
   "repository": {
@@ -49,21 +48,9 @@
     "node": ">=14.0.0",
     "npm": ">=6.0.0"
   },
-  "dependencies": {
-    "chalk": "^4.1.2",
-    "commander": "^9.0.0",
-    "fs-extra": "^10.1.0",
-    "glob": "^8.0.3",
-    "inquirer": "^8.2.4",
-    "prettier": "^3.1.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/fs-extra": "^9.0.13",
-    "@types/glob": "^7.2.0",
-    "@types/inquirer": "^8.2.1",
     "@types/node": "^18.0.0",
-    "@types/prettier": "^2.7.0",
-    "ts-node": "^10.8.1",
     "typescript": "^4.7.4"
   },
   "files": [

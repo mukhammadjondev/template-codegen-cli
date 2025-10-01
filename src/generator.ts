@@ -1,8 +1,39 @@
-import * as fs from 'fs-extra';
+import * as fs from 'fs';
 import * as path from 'path';
-import * as glob from 'glob';
-import * as prettier from 'prettier';
-import { GeneratorConfig, TemplateConfig, GenerationResult } from './types';
+
+export interface GeneratorConfig {
+  templates: Record<string, TemplateConfig>;
+  hooks?: {
+    beforeGenerate?: (context: GenerationContext) => Promise<void> | void;
+    afterGenerate?: (
+      context: GenerationContext,
+      result: GenerationResult
+    ) => Promise<void> | void;
+  };
+}
+
+export interface TemplateConfig {
+  path: string;
+  description?: string;
+  output?: string;
+  needsBody?: boolean;
+  variables?: Record<string, string>;
+  ignore?: string[];
+}
+
+export interface GenerationResult {
+  success: boolean;
+  files: string[];
+  errors: string[];
+  warnings?: string[];
+}
+
+export interface GenerationContext {
+  templateName: string;
+  moduleName: string;
+  outputPath: string;
+  bodyObject?: Record<string, any>;
+}
 
 export class Generator {
   private config: GeneratorConfig = { templates: {} };
@@ -10,27 +41,24 @@ export class Generator {
   async loadConfig(configPath?: string): Promise<void> {
     const possiblePaths = configPath
       ? [configPath]
-      : ['./codegen.config.ts', './codegen.config.js', './codegen.config.json'];
+      : ['./codegen.config.js', './codegen.config.json'];
 
     for (const tryPath of possiblePaths) {
-      if (await fs.pathExists(tryPath)) {
+      if (fs.existsSync(tryPath)) {
         const resolvedPath = path.resolve(tryPath);
 
-        if (tryPath.endsWith('.ts')) {
-          try {
-            require('ts-node/register');
-          } catch (e) {
-            console.warn(
-              'ts-node not found, install it: npm install -D ts-node'
-            );
-            continue;
-          }
-        }
-
         try {
+          // Clear require cache
           delete require.cache[resolvedPath];
-          const loaded = require(resolvedPath);
-          this.config = loaded.default || loaded;
+
+          if (tryPath.endsWith('.json')) {
+            const content = fs.readFileSync(resolvedPath, 'utf8');
+            this.config = JSON.parse(content);
+          } else {
+            // For .js files, use dynamic import to avoid module system issues
+            const loaded = require(resolvedPath);
+            this.config = loaded.default || loaded;
+          }
 
           if (
             !this.config.templates ||
@@ -51,7 +79,7 @@ export class Generator {
 
     throw new Error(
       'Config file not found. Run "codegen init" first.\n' +
-        'Looking for: codegen.config.ts, codegen.config.js, or codegen.config.json'
+        'Looking for: codegen.config.js or codegen.config.json'
     );
   }
 
@@ -66,9 +94,7 @@ export class Generator {
   getTemplate(name: string): TemplateConfig {
     if (!this.hasTemplate(name)) {
       throw new Error(
-        `Template "${name}" not found. Available templates: ${this.getTemplates().join(
-          ', '
-        )}`
+        `Template "${name}" not found. Available: ${this.getTemplates().join(', ')}`
       );
     }
     return this.config.templates[name];
@@ -90,16 +116,11 @@ export class Generator {
     };
 
     try {
-      if (!this.hasTemplate(templateName)) {
-        throw new Error(`Template "${templateName}" not found`);
-      }
-
-      const template = this.config.templates[templateName];
+      const template = this.getTemplate(templateName);
       const templatePath = template.path;
-
       const finalOutputPath = outputPath || template.output || './src';
 
-      if (!(await fs.pathExists(templatePath))) {
+      if (!fs.existsSync(templatePath)) {
         throw new Error(`Template path not found: ${templatePath}`);
       }
 
@@ -120,8 +141,7 @@ export class Generator {
         );
       }
 
-      const pattern = path.join(templatePath, '**/*');
-      const files = glob.sync(pattern, { nodir: true, dot: true });
+      const files = this.getAllFiles(templatePath);
 
       for (const file of files) {
         const relativePath = path.relative(templatePath, file);
@@ -130,21 +150,13 @@ export class Generator {
           template.ignore &&
           this.shouldIgnore(relativePath, template.ignore)
         ) {
-          result.warnings?.push(`Skipped ignored file: ${relativePath}`);
+          result.warnings?.push(`Skipped: ${relativePath}`);
           continue;
         }
 
-        const content = await fs.readFile(file, 'utf8');
-
+        let content = fs.readFileSync(file, 'utf8');
         let processedPath = this.replacePlaceholders(relativePath, moduleName);
         let processedContent = this.replacePlaceholders(content, moduleName);
-
-        if (template.hooks?.beforeFileGenerate) {
-          processedContent = await template.hooks.beforeFileGenerate(
-            processedPath,
-            processedContent
-          );
-        }
 
         if (Object.keys(bodyReplacements).length > 0) {
           processedContent = this.replaceBodyPlaceholders(
@@ -153,31 +165,19 @@ export class Generator {
           );
         }
 
-        // Format with Prettier if enabled
         if (shouldFormat && !isDryRun) {
           try {
-            processedContent = await this.formatCode(
-              processedContent,
-              processedPath
-            );
-          } catch (formatError) {
-            result.warnings?.push(
-              `Could not format ${processedPath}: ${
-                (formatError as Error).message
-              }`
-            );
+            processedContent = this.formatCode(processedContent, processedPath);
+          } catch (e) {
+            result.warnings?.push(`Format failed: ${processedPath}`);
           }
         }
 
         const outputFile = path.join(finalOutputPath, processedPath);
 
         if (!isDryRun) {
-          await fs.ensureDir(path.dirname(outputFile));
-          await fs.writeFile(outputFile, processedContent);
-
-          if (template.hooks?.afterFileGenerate) {
-            await template.hooks.afterFileGenerate(outputFile);
-          }
+          this.ensureDir(path.dirname(outputFile));
+          fs.writeFileSync(outputFile, processedContent);
         }
 
         result.files.push(processedPath);
@@ -185,12 +185,7 @@ export class Generator {
 
       if (this.config.hooks?.afterGenerate) {
         await this.config.hooks.afterGenerate(
-          {
-            templateName,
-            moduleName,
-            outputPath: finalOutputPath,
-            bodyObject,
-          },
+          { templateName, moduleName, outputPath: finalOutputPath, bodyObject },
           result
         );
       }
@@ -202,60 +197,51 @@ export class Generator {
     return result;
   }
 
-  private async formatCode(content: string, filePath: string): Promise<string> {
-    const ext = path.extname(filePath);
+  private getAllFiles(dir: string): string[] {
+    const files: string[] = [];
+    const items = fs.readdirSync(dir);
 
-    // Determine parser based on file extension
-    let parser: prettier.BuiltInParserName | undefined;
+    for (const item of items) {
+      const fullPath = path.join(dir, item);
+      const stat = fs.statSync(fullPath);
 
-    switch (ext) {
-      case '.vue':
-        parser = 'vue';
-        break;
-      case '.ts':
-      case '.tsx':
-        parser = 'typescript';
-        break;
-      case '.js':
-      case '.jsx':
-        parser = 'babel';
-        break;
-      case '.json':
-        parser = 'json';
-        break;
-      case '.css':
-      case '.scss':
-        parser = 'css';
-        break;
-      case '.html':
-        parser = 'html';
-        break;
-      case '.md':
-        parser = 'markdown';
-        break;
-      default:
-        // Don't format unknown file types
-        return content;
+      if (stat.isDirectory()) {
+        files.push(...this.getAllFiles(fullPath));
+      } else {
+        files.push(fullPath);
+      }
     }
 
-    try {
-      return prettier.format(content, {
-        parser,
-        semi: true,
-        singleQuote: true,
-        tabWidth: 2,
-        trailingComma: 'es5',
-        printWidth: 80,
-        arrowParens: 'avoid',
-      });
-    } catch (error) {
-      // If formatting fails, return original content
-      return content;
+    return files;
+  }
+
+  private ensureDir(dir: string): void {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
   }
 
-  private shouldIgnore(filePath: string, ignorePatterns: string[]): boolean {
-    return ignorePatterns.some(pattern => {
+  private formatCode(content: string, filePath: string): string {
+    const ext = path.extname(filePath);
+
+    // Simple formatting for common file types
+    if (['.js', '.ts', '.jsx', '.tsx', '.vue', '.css', '.scss'].includes(ext)) {
+      // Basic formatting: fix indentation and line endings
+      return (
+        content
+          .split('\n')
+          .map(line => line.trimEnd())
+          .join('\n')
+          .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+          .trim() + '\n'
+      );
+    }
+
+    return content;
+  }
+
+  private shouldIgnore(filePath: string, patterns: string[]): boolean {
+    return patterns.some(pattern => {
       const regex = new RegExp(pattern.replace(/\*/g, '.*'));
       return regex.test(filePath);
     });
@@ -293,9 +279,7 @@ export class Generator {
             nestedValue !== null &&
             !Array.isArray(nestedValue)
           ) {
-            interfaceContent += `  ${nestedKey}: ${this.capitalize(
-              nestedKey
-            )};\n`;
+            interfaceContent += `  ${nestedKey}: ${this.capitalize(nestedKey)};\n`;
           } else {
             interfaceContent += `  ${nestedKey}: string;\n`;
           }
@@ -303,14 +287,10 @@ export class Generator {
 
         interfaceContent += `}\n\n`;
         replacements.interfaces += interfaceContent;
-
         replacements.types += `  ${key}: ${interfaceName};\n`;
 
         const nestedDefaults = this.generateNestedDefaults(value);
         replacements.defaultValues += `  ${key}: ${nestedDefaults},\n`;
-
-        const nestedZodSchema = this.generateNestedZodSchema(value);
-        replacements.zodSchema += `  ${key}: z.object(${nestedZodSchema}),\n`;
 
         Object.entries(value).forEach(([nestedKey, nestedValue]) => {
           processField(nestedKey, nestedValue, fullPath);
@@ -365,41 +345,22 @@ export class Generator {
     return result;
   }
 
-  private generateNestedZodSchema(obj: Record<string, any>): string {
-    let result = '{\n';
-    Object.entries(obj).forEach(([key, value]) => {
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        !Array.isArray(value)
-      ) {
-        result += `    ${key}: z.object(${this.generateNestedZodSchema(
-          value
-        )}),\n`;
-      } else {
-        result += `    ${key}: z.string(),\n`;
-      }
-    });
-    result += '  }';
-    return result;
-  }
-
   private replaceBodyPlaceholders(
     content: string,
     replacements: Record<string, string>
   ): string {
     let result = content;
     Object.entries(replacements).forEach(([key, value]) => {
-      const placeholders = [
+      const patterns = [
         `{{body:${key}}}`,
         `{{body: ${key}}}`,
         `{{ body:${key} }}`,
         `{{ body: ${key} }}`,
       ];
 
-      placeholders.forEach(placeholder => {
+      patterns.forEach(pattern => {
         result = result.replace(
-          new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+          new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
           value
         );
       });
