@@ -1,6 +1,6 @@
 {
   "name": "smart-codegen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Universal code generator with nested object support for dynamic form and component generation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
