@@ -19,14 +19,14 @@ Stop writing repetitive boilerplate code. Smart Codegen generates complete, prod
 
 ## Features
 
-✨ **Nested Object Support** - Handle complex data structures with unlimited nesting depth
-⚡ **Dynamic Generation** - Auto-generate form fields, types, and interfaces
-🎯 **Smart Placeholders** - Multiple naming conventions (camelCase, PascalCase, kebab-case, snake_case)
-🔧 **Flexible Configuration** - JavaScript or TypeScript config files
-👁️ **Dry Run Mode** - Preview changes before creating files
-✅ **Template Validation** - Verify template structure before generation
-🎨 **Auto Formatting** - Prettier integration for clean output
-📝 **Interactive Editor** - Built-in JSON editor for complex structures
+- ✨ **Nested Object Support** - Handle complex data structures with unlimited nesting depth
+- ⚡ **Dynamic Generation** - Auto-generate form fields, types, and interfaces
+- 🎯 **Smart Placeholders** - Multiple naming conventions (camelCase, PascalCase, kebab-case, snake_case)
+- 🔧 **Flexible Configuration** - JavaScript or TypeScript config files
+- 👁️ **Dry Run Mode** - Preview changes before creating files
+- ✅ **Template Validation** - Verify template structure before generation
+- 🎨 **Auto Formatting** - Prettier integration for clean output
+- 📝 **Interactive Editor** - Built-in JSON editor for complex structures
 
 ## Installation
 
