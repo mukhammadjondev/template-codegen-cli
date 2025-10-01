@@ -1,0 +1,74 @@
+{
+  "name": "smart-codegen",
+  "version": "1.0.0",
+  "description": "Universal code generator with nested object support for dynamic form and component generation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "codegen": "dist/cli.js"
+  },
+  "scripts": {
+    "dev": "ts-node src/cli.ts",
+    "build": "tsc && chmod +x dist/cli.js",
+    "prepublishOnly": "npm run build",
+    "clean": "rm -rf dist",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "code-generator",
+    "scaffolding",
+    "template",
+    "cli",
+    "codegen",
+    "boilerplate",
+    "vue-form",
+    "react-component",
+    "typescript",
+    "nested-objects",
+    "form-generator",
+    "developer-tools",
+    "automation",
+    "productivity"
+  ],
+  "author": {
+    "name": "Mukhammadjon Solijonov",
+    "email": "solijonovdev@gmail.com",
+    "url": "https://github.com/mukhammadjondev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mukhammadjondev/smart-codegen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mukhammadjondev/smart-codegen/issues"
+  },
+  "homepage": "https://github.com/mukhammadjondev/smart-codegen#readme",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^9.0.0",
+    "fs-extra": "^10.1.0",
+    "glob": "^8.0.3",
+    "inquirer": "^8.2.4",
+    "prettier": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
+    "@types/glob": "^7.2.0",
+    "@types/inquirer": "^8.2.1",
+    "@types/node": "^18.0.0",
+    "@types/prettier": "^2.7.0",
+    "ts-node": "^10.8.1",
+    "typescript": "^4.7.4"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
